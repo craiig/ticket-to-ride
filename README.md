@@ -8,7 +8,8 @@ Run `make` in the directory and install whatever relevant packages you need.
 # Output
 critical_paths.csv - the top rail links that connect the most ticket cards, as
 computed by adding up all tickets that take the shortest path through the
-link.
+link. Each link is weighted by the probability of getting the cards to complete
+this path.
 
 ticket_important_paths.csv - The most important path for each destination,
 given by the above critical_paths.
