@@ -12,3 +12,7 @@ link.
 
 ticket_important_paths.csv - The most important path for each destination,
 given by the above critical_paths.
+
+# Data Sources
+https://boardgames.stackexchange.com/questions/8637/where-can-i-find-an-exhaustive-inventory-of-cards-in-ticket-to-ride
+https://boardgamegeek.com/image/299000/ticket-ride

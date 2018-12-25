@@ -6,6 +6,44 @@ import networkx as nx
 import pandas as pd
 from pprint import pprint
 import os
+from scipy.special import comb
+import operator as op
+
+# Idea is to weight edges by the probability of acquiring these two cards
+# according to https://boardgames.stackexchange.com/questions/8637/where-can-i-find-an-exhaustive-inventory-of-cards-in-ticket-to-ride
+# there are 12 each of 8 different colors, plus 14 wilds.
+edge_colors = ["orange", "blue", "red", "pink", "blue", "yellow", "green", "black"]
+color_counts = [12,         12,     12, 12,     12,     12,         12,     12]
+wildcard_counts = 14 
+total_card_counts = sum(color_counts) + wildcard_counts
+color_probs = [ (c+wildcard_counts) / (float(sum(color_counts))+wildcard_counts) for c in color_counts ]
+def edge_probability(weight, colors):
+    total_probs = []
+    for c in colors:
+        if c == 'gray':
+            prob = 0
+            #count number of ways to make flush with wildcards
+            for given_wc in range(weight): # can get a wildcard for up to each weight
+                wc_weight = weight - given_wc
+                prob += comb(len(edge_colors), 1) * comb(12, wc_weight)
+
+            # plus using entirely wildcards
+            prob += comb(14, weight)
+
+            prob /= comb(total_card_counts, weight)
+            print "gray prob: {} weight={}".format(prob, weight)
+        else:
+            prob = comb(12, weight)
+            prob /= comb(total_card_counts, weight)
+            print "{} prob: {} weight={}".format(c, prob, weight)
+
+        #either event happens so we add
+        total_probs.append(prob)
+
+    # sum minus the product
+    if len(total_probs) > 1:
+        return sum(total_probs) - reduce(op.mul, total_probs)
+    return total_probs[0]
 
 def read_graph(filename):
     f = open(filename)
@@ -15,7 +53,10 @@ def read_graph(filename):
 
     for (from_, to, weight, colors) in j['routes']:
         # TODO handle colors
-        g.add_edge(from_, to, weight=weight)
+        edge_weight = 1-edge_probability( weight, colors )
+
+        g.add_edge(from_, to, weight=edge_weight)
+        print "{} <-> {}, colors: {} edge_weight (1-p): {}".format(from_, to, colors, edge_weight)
 
     j['graph'] = g
     return j
@@ -51,8 +92,9 @@ def analyze_critical_junctions(args, graph):
         data = g.get_edge_data(from_, to)
         edges.append( [from_, to, data['weight'], data.get('tickets',0) ] )
 
-    df = pd.DataFrame.from_records(edges, columns=["from", "to", "length", "tickets"])
-    df = df.sort_values(by=['tickets', 'from', 'to'], ascending=False)
+    df = pd.DataFrame.from_records(edges, columns=["from", "to", "weight", "tickets"])
+    df['cost_to_acquire'] = df['weight'] * df['tickets']
+    df = df.sort_values(by=['cost_to_acquire', 'tickets', 'from', 'to'], ascending=False)
     df.to_csv(os.path.join(args.output_dir, 'critical_paths.csv'), index=False)
 
     # now for each destination, output the important edge
@@ -69,7 +111,7 @@ def analyze_critical_junctions(args, graph):
         important_paths.append([key, ticket_path_name(*max_edge), max_tickets])
 
     df = pd.DataFrame.from_records(important_paths, columns=["ticket", "important path", "tickets"])
-    df = df.sort_values(by=['ticket', 'tickets'], ascending=False)
+    df = df.sort_values(by=['ticket', 'tickets'], ascending=True)
     df.to_csv(os.path.join(args.output_dir, 'ticket_important_paths.csv'), index=False)
 
 if __name__ == "__main__":
