@@ -83,7 +83,7 @@
 		["Houston", "New Orleans", 2, ["gray"]],
 		["New Orleans", "Little Rock", 3, ["green"]],
 		["Nashville", "Little Rock", 3, ["white"]],
-		["Little Rock", "Kansas City", 2, ["gray"]],
+		["Little Rock", "Saint Louis", 2, ["gray"]],
 		["Nashville", "Saint Louis", 2, ["gray"]],
 		["Chicago", "Saint Louis", 2, ["green", "white"]],
 		["Saint Louis", "Pittsburgh", 5, ["green"]],

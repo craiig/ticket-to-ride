@@ -40,10 +40,12 @@ def edge_probability(weight, colors):
         #either event happens so we add
         total_probs.append(prob)
 
+    final_prob = total_probs[0]
     # sum minus the product
     if len(total_probs) > 1:
-        return sum(total_probs) - reduce(op.mul, total_probs)
-    return total_probs[0]
+        final_prob =  sum(total_probs) - reduce(op.mul, total_probs)
+
+    return final_prob
 
 def read_graph(filename):
     f = open(filename)
@@ -54,6 +56,7 @@ def read_graph(filename):
     for (from_, to, weight, colors) in j['routes']:
         # TODO handle colors
         edge_weight = 1-edge_probability( weight, colors )
+        #edge_weight = (1-edge_probability( weight, colors )) * weight
 
         g.add_edge(from_, to, weight=edge_weight)
         print "{} <-> {}, colors: {} edge_weight (1-p): {}".format(from_, to, colors, edge_weight)
@@ -74,7 +77,7 @@ def analyze_critical_junctions(args, graph):
 
     tickets_paths = {}
     for (ticket_from, ticket_to, points) in graph['tickets']:
-        path = nx.shortest_path(g, ticket_from, ticket_to)
+        path = nx.shortest_path(g, ticket_from, ticket_to, weight='weight')
 
         path_key = ticket_path_name(ticket_from, ticket_to)
         tickets_paths[path_key] = path
@@ -93,8 +96,10 @@ def analyze_critical_junctions(args, graph):
         edges.append( [from_, to, data['weight'], data.get('tickets',0) ] )
 
     df = pd.DataFrame.from_records(edges, columns=["from", "to", "weight", "tickets"])
-    df['cost_to_acquire'] = df['weight'] * df['tickets']
-    df = df.sort_values(by=['cost_to_acquire', 'tickets', 'from', 'to'], ascending=False)
+    df = df[ df['tickets'] > 0 ]
+    df['cost_per_ticket'] = df['weight'] / df['tickets']
+    df = df.sort_values(by=['cost_per_ticket', 'weight', 'tickets', 'from', 'to'], ascending=False)
+    #df = df.sort_values(by=['weight', 'tickets', 'from', 'to'], ascending=False)
     df.to_csv(os.path.join(args.output_dir, 'critical_paths.csv'), index=False)
 
     # now for each destination, output the important edge
@@ -108,9 +113,9 @@ def analyze_critical_junctions(args, graph):
                 max_tickets = data['tickets']
                 max_edge = (from_, to)
 
-        important_paths.append([key, ticket_path_name(*max_edge), max_tickets])
+        important_paths.append([key, ticket_path_name(*max_edge), max_tickets, str(path)])
 
-    df = pd.DataFrame.from_records(important_paths, columns=["ticket", "important path", "tickets"])
+    df = pd.DataFrame.from_records(important_paths, columns=["ticket", "important path", "tickets", "full_path"])
     df = df.sort_values(by=['ticket', 'tickets'], ascending=True)
     df.to_csv(os.path.join(args.output_dir, 'ticket_important_paths.csv'), index=False)
 
