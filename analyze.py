@@ -31,11 +31,11 @@ def edge_probability(weight, colors):
             prob += comb(14, weight)
 
             prob /= comb(total_card_counts, weight)
-            print "gray prob: {} weight={}".format(prob, weight)
+            #print "gray prob: {} weight={}".format(prob, weight)
         else:
             prob = comb(12, weight)
             prob /= comb(total_card_counts, weight)
-            print "{} prob: {} weight={}".format(c, prob, weight)
+            #print "{} prob: {} weight={}".format(c, prob, weight)
 
         #either event happens so we add
         total_probs.append(prob)
@@ -59,7 +59,7 @@ def read_graph(filename):
         #edge_weight = (1-edge_probability( weight, colors )) * weight
 
         g.add_edge(from_, to, weight=edge_weight)
-        print "{} <-> {}, colors: {} edge_weight (1-p): {}".format(from_, to, colors, edge_weight)
+        #print "{} <-> {}, colors: {} edge_weight (1-p): {}".format(from_, to, colors, edge_weight)
 
     j['graph'] = g
     return j
@@ -98,7 +98,7 @@ def analyze_critical_junctions(args, graph):
     df = pd.DataFrame.from_records(edges, columns=["from", "to", "weight", "tickets"])
     df = df[ df['tickets'] > 0 ]
     df['cost_per_ticket'] = df['weight'] / df['tickets']
-    df = df.sort_values(by=['cost_per_ticket', 'weight', 'tickets', 'from', 'to'], ascending=False)
+    df = df.sort_values(by=['cost_per_ticket', 'weight', 'tickets', 'from', 'to'])
     #df = df.sort_values(by=['weight', 'tickets', 'from', 'to'], ascending=False)
     df.to_csv(os.path.join(args.output_dir, 'critical_paths.csv'), index=False)
 
